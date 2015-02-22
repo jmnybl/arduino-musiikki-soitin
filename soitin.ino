@@ -1,26 +1,30 @@
-/*
+
 #include "display.h"
 
 
-int numbers[]={2,3,4,5};
-int order[]={13,12,9,7,8,11,10,6};
+int numbers[]={2,3,4,5}; // four different digits in display
+int order[]={13,12,9,7,8,11,10,6}; // pins to form numbers
 Display d(numbers,order);
 void setup() {
-  
+  //Serial.begin(9600);
 }
 
 
 
 void loop() {
-  for (int i=0;i<10;i++) {
-    d.assign_order(i);
-    d.show(2);
-    delay(1000);
-  }
-    
+  d.show_number(2,5);
+  delay(1000);
+  d.show_number(1113,5);
+  delay(1000);
+  d.show_number(316,2);
+  delay(1000);
+  d.clear_display();
+  delay(1000);
+  
+  
 }
 
-*/
+
 /*
 
  Demonstrates the use of the Audio library for the Arduino Due
@@ -33,7 +37,7 @@ void loop() {
  Modified by Scott Fitzgerald October 19, 2012
 
 */
-
+/*
 #include <SD.h>
 #include <SPI.h>
 #include <Audio.h>
@@ -97,4 +101,4 @@ void loop()
   Serial.println("End of file. Thank you for listening!");
   while (true) ;
 }
-
+*/
