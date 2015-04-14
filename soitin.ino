@@ -1,5 +1,6 @@
 
 #include "display.h"
+#include "timer.h"
 
 #define knobA 52 // pins for timer/track knob
 #define knobB 53
@@ -8,9 +9,12 @@
 int numbers[]={31,32,33,34}; // four different digits in display
 int order[]={22,23,24,25,26,27,28,29,30}; // pins to form numbers A-G,DP
 Display d(numbers,order);
+Timer t(0,0);
 
 void setup() {
   
+  
+  t.set_time(1,10); // 1 min, 10 secs
   d.clear_display();
   
   pinMode(knobA, INPUT_PULLUP); // pull-up resistors
@@ -27,7 +31,6 @@ void setup() {
 }
 
 int track_counter = 0;
-int timer = 0;
 int increment = 0;
 boolean confirmed=false;
 boolean pushed=false;
@@ -43,7 +46,7 @@ void isr() {
         track_counter+=increment;
       }
       else {
-        timer+=increment;
+        t.increment(increment,0);
       }
       confirmed=false;
       pushed=false;  
@@ -85,16 +88,20 @@ void loop() {
   if (track_counter<0) {
     track_counter=0;  
   }
-  if (timer<0) {
-    timer=0;  
-  }
+  
+  t.update();
   
   // display
   if (digitalRead(push)==LOW) {
     d.show_number(track_counter,10);
   }
   else {
-    d.show_number(timer,10);
+    if (t.minutes()>0) {
+      d.show_number(t.minutes(),10);
+    }
+    else {
+      d.show_number(t.seconds(),10);
+    }
   }
 }
 
