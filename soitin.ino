@@ -1,27 +1,101 @@
 
 #include "display.h"
 
+#define knobA 52 // pins for timer/track knob
+#define knobB 53
+#define push 50
 
-int numbers[]={2,3,4,5}; // four different digits in display
-int order[]={13,12,9,7,8,11,10,6}; // pins to form numbers
+int numbers[]={31,32,33,34}; // four different digits in display
+int order[]={22,23,24,25,26,27,28,29,30}; // pins to form numbers A-G,DP
 Display d(numbers,order);
+
 void setup() {
-  //Serial.begin(9600);
+  
+  d.clear_display();
+  
+  pinMode(knobA, INPUT_PULLUP); // pull-up resistors
+  digitalWrite(knobA, HIGH);
+  pinMode(knobB,INPUT_PULLUP);
+  digitalWrite(knobB, HIGH);
+  pinMode(push,INPUT_PULLUP);
+  
+  attachInterrupt(knobA, isr, CHANGE);
+  attachInterrupt(knobB, isr, CHANGE);
+
+  // Serial.begin (9600);
+
 }
 
+int track_counter = 0;
+int timer = 0;
+int increment = 0;
+boolean confirmed=false;
+boolean pushed=false;
 
+void isr() {
+  int a=digitalRead(knobA);
+  int b=digitalRead(knobB);
+  if (a==HIGH && b==HIGH) {
+    if (confirmed) {
+      // we have confirmed reading, and see HH first time (otherwise confirmed would be false)
+      // --> it's okay to update the counter
+      if (pushed) {
+        track_counter+=increment;
+      }
+      else {
+        timer+=increment;
+      }
+      confirmed=false;
+      pushed=false;  
+    }
+    else {
+      // HH and reading not confirmed --> bouncing back to start or new round is not yet started
+      return;
+    }
+  }
+  else if (a==LOW && b==LOW) {
+    // this confirms that last reading we saw is correct, do not update it after this
+    confirmed=true;
+  }
+  else {
+    if (confirmed) {
+      // we already confirmed our reading so do not update it anymore, this is
+      // just bouncing, or we are waiting the next HH
+      return;
+    }
+    else {
+      // decide the increment (clockwise or counter clockwise)
+      if (a==HIGH) {
+        increment=1;
+      }
+      else {
+        increment=-1;
+      }
+      // check also the push button and store the value so we know which one to increment
+      if (digitalRead(push)==LOW) {
+        pushed=true;
+      }
+    }
+  }
+}
 
 void loop() {
-  d.show_number(2,5);
-  delay(1000);
-  d.show_number(1113,5);
-  delay(1000);
-  d.show_number(316,2);
-  delay(1000);
-  d.clear_display();
-  delay(1000);
   
+  // isr increments the counters, here just make sure they are not smaller than zero
+  if (track_counter<0) {
+    track_counter=0;  
+  }
+  if (timer<0) {
+    timer=0;  
+  }
   
+  // display
+  if (digitalRead(push)==LOW) {
+    d.show_number(track_counter,10);
+  }
+  else {
+    d.show_number(timer,10);
+  }
 }
 
 
@@ -36,8 +110,7 @@ void loop() {
  Original by Massimo Banzi September 20, 2012
  Modified by Scott Fitzgerald October 19, 2012
 
-*/
-/*
+
 #include <SD.h>
 #include <SPI.h>
 #include <Audio.h>

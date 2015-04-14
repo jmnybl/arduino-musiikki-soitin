@@ -74,7 +74,7 @@ void Display::clear_display() {
 Show the whole number (between 0-9999) in the LED display
 time: for how long...?
 */
-void Display::show_number(int number, int seconds) {
+void Display::show_number(int number, int milli_seconds) {
   
   int start_digit=0; // digits needed to show the number
   
@@ -97,7 +97,7 @@ void Display::show_number(int number, int seconds) {
   clear_display(); 
   unsigned long start_time=millis();
   
-  while (millis()-start_time<seconds*1000) {
+  while (millis()-start_time<milli_seconds) {
     for (int j=start_digit;j<4;j++) {
       show_digit(j+1,digits[j]);
       delayMicroseconds(del);
