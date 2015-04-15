@@ -147,7 +147,8 @@ void loop() {
     myFile.read(buffer, sizeof(buffer));
 
     // Prepare samples
-    int volume = 1023;
+    //int volume = 1023;
+    int volume = 512;
     Audio.prepare(buffer, S, volume);
     // Feed samples to audio
     Audio.write(buffer, S);
