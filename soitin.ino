@@ -14,6 +14,7 @@
 
 #include "display.h"
 #include "timer.h"
+#include "step_motor.h"
 
 #include <SD.h>
 #include <SPI.h>
@@ -27,6 +28,7 @@ int numbers[]={31,32,33,34}; // four different digits in display
 int order[]={22,23,24,25,26,27,28,29}; // pins to form numbers A-G,DP
 Display d(numbers,order);
 Timer t(0,0);
+StepMotor motor(513,36,37,38,39,-1); // stepper motor, pins 36-39, no indicator LED
 
 void setup() {
   
@@ -65,6 +67,7 @@ void setup() {
 
 }
 
+int tracks=1;
 int track_counter = 1;
 int increment = 0;
 boolean confirmed=false;
@@ -123,6 +126,7 @@ boolean sleep=false;
 void loop() {
 
   // open wave file from sdcard
+  
   File myFile = SD.open("dl.wav");
   if (!myFile) {
     // if the file didn't open, print an error and stop
@@ -181,6 +185,9 @@ void loop() {
       }
     }
     
+    // motor
+    motor.singleStep(true);
+    
     if (t.minutes()==0 && t.seconds()==0) {
       sleep=true;
       break;
@@ -194,6 +201,10 @@ void loop() {
   
   while (sleep) {
     // ...do nothing
+  }
+  
+  if (track_counter>tracks) {
+    track_counter=1;
   }
 }
 
