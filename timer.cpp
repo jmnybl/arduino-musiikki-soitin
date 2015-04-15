@@ -23,8 +23,8 @@ void Timer::increment(int minutes, int seconds) {
 }
 
 void Timer::update() {
-  int current=(int)millis();
-  int t=(current-last_update)/1000; // ...seconds
+  long current=millis();
+  int t=(int)(current-last_update)/1000; // ...seconds
   if (t>0) {
     this->secs-=t;
     if (this->secs<0) {

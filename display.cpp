@@ -12,6 +12,11 @@ Display::Display(int *numbers, int *order) {
   this->numbers=numbers;
   this->del=10;
   
+  this->first_num=0;
+  this->start_digit=0;
+  this->current=0;
+  int current_digits[4];
+  
   for (int i=0;i<order_size;i++) {
     pinMode(order[i],OUTPUT);
     digitalWrite(order[i],LOW);
@@ -74,25 +79,25 @@ void Display::clear_display() {
 Show the whole number (between 0-9999) in the LED display
 time: for how long...?
 */
-void Display::show_number(int number, int milli_seconds) {
+void Display::show_number(int num, int milli_seconds) {
   
   int start_digit=0; // digits needed to show the number
   
-  if (number<10) {
+  if (num<10) {
     start_digit=3;
   }
-  else if (number<100) {
+  else if (num<100) {
     start_digit=2;
   }
-  else if (number<1000) {
+  else if (num<1000) {
     start_digit=1;
   }
   
   int digits[4];
-  digits[3]=number%10; //units
-  digits[2]=(number%100)/10; //tens
-  digits[1]=(number%1000)/100; //hundreds
-  digits[0]=(number%10000)/1000; //thousands
+  digits[3]=num%10; //units
+  digits[2]=(num%100)/10; //tens
+  digits[1]=(num%1000)/100; //hundreds
+  digits[0]=(num%10000)/1000; //thousands
   
   clear_display(); 
   unsigned long start_time=millis();
@@ -105,5 +110,51 @@ void Display::show_number(int number, int milli_seconds) {
   }
   clear_display();
   
+}
+
+/*
+Update the number we want to show
+*/
+void Display::update_number(int num) {
+  
+  this->first_num=num;
+  this->start_digit=0; // digits needed to show the number
+  
+  if (num<10) {
+    this->start_digit=3;
+  }
+  else if (num<100) {
+    this->start_digit=2;
+  }
+  else if (num<1000) {
+    this->start_digit=1;
+  }
+  
+  this->current_digits[3]=num%10; //units
+  this->current_digits[2]=(num%100)/10; //tens
+  this->current_digits[1]=(num%1000)/100; //hundreds
+  this->current_digits[0]=(num%10000)/1000; //thousands
+  
+  //clear_display();
+  this->current=this->start_digit;
+  show_next();
+  /*
+  unsigned long start_time=millis();
+  
+  while (millis()-start_time<milli_seconds) {
+    for (int j=start_digit;j<4;j++) {
+      show_digit(j+1,digits[j]);
+      delayMicroseconds(del);
+    }
+  }
+  clear_display();
+  */
+  
+}
+
+void Display::show_next() { 
+  int to_show=(this->current+1<4 ? this->current+1 : this->start_digit);
+  this->current=to_show;
+  show_digit(this->current+1,this->current_digits[this->current]);
 }
 

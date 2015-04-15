@@ -6,7 +6,7 @@
 class Timer {
   public:
     int secs;
-    int last_update;
+    long last_update;
     
     Timer(int minutes, int seconds);
     void set_time(int minutes, int seconds);
