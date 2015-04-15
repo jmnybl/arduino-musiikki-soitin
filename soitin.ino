@@ -1,14 +1,5 @@
 /*
-
- Demonstrates the use of the Audio library for the Arduino Due
-
- Hardware required :
- *Arduino shield with a SD card on CS 4 (the Ethernet sheild will work)
- *Speaker attched to ground and DAC0
-
- Original by Massimo Banzi September 20, 2012
- Modified by Scott Fitzgerald October 19, 2012
- 
+ Audio part from http://arduino.cc/en/Tutorial/SimpleAudioPlayer
 */
 
 
@@ -67,11 +58,9 @@ void setup() {
 
 }
 
-int tracks=1;
-int track_counter = 1;
+int track_counter = 0;
 int increment = 0;
 boolean confirmed=false;
-boolean pushed=false;
 
 void isr() {
   int a=digitalRead(knobA);
@@ -80,14 +69,13 @@ void isr() {
     if (confirmed) {
       // we have confirmed reading, and see HH first time (otherwise confirmed would be false)
       // --> it's okay to update the counter
-      if (pushed) {
+      if (digitalRead(push)==LOW) {
         track_counter+=increment;
       }
       else {
         t.increment(increment,0);
       }
-      confirmed=false;
-      pushed=false;  
+      confirmed=false;  
     }
     else {
       // HH and reading not confirmed --> bouncing back to start or new round is not yet started
@@ -112,25 +100,40 @@ void isr() {
       else {
         increment=-1;
       }
-      // check also the push button and store the value so we know which one to increment
-      if (digitalRead(push)==LOW) {
-        pushed=true;
-      }
     }
   }
 }
 
 
 boolean sleep=false;
+int tracks=2; // number of tracks we have in the SD card
+int playing;
+char* name_b = "track00";
+char* name_e = ".wav";
+char track_name[12];
 
 void loop() {
 
-  // open wave file from sdcard
+  track_counter+=1;
+  if (track_counter>tracks) {
+    track_counter=1;
+  }
+  playing=track_counter;
   
-  File myFile = SD.open("dl.wav");
+  char numstr[1];
+  
+  sprintf(numstr, "%d", track_counter-1);
+  strcpy(track_name, name_b);
+  strcat(track_name, numstr);
+  strcat(track_name, name_e);
+  
+  // open wave file from sdcard
+  Serial.print("Playing ");
+  Serial.println(track_name);
+  File myFile = SD.open(track_name);
   if (!myFile) {
     // if the file didn't open, print an error and stop
-    Serial.println("error opening test.wav");
+    Serial.println("error opening .wav");
     while (true);
   }
 
@@ -150,8 +153,8 @@ void loop() {
     Audio.write(buffer, S);
     
     // isr increments the counter, here just make sure it's not smaller than zero
-    if (track_counter<0) {
-      track_counter=0;  
+    if (track_counter<1) {
+      track_counter=1;  
     }
   
     // timer
@@ -162,34 +165,32 @@ void loop() {
       if (d.first_num!=track_counter) {
         d.update_number(track_counter);
       }
-      else {
-        d.show_next();
-      }
     }
     else {
       if (t.minutes()>0) {
         if (d.first_num!=t.minutes()) {
           d.update_number(t.minutes());
         }
-        else {
-          d.show_next();
-        }
       }
       else {
         if (d.first_num!=t.seconds()) {
           d.update_number(t.seconds());
         }
-        else {
-          d.show_next();
-        }
       }
     }
+    d.show_next();
     
     // motor
     motor.singleStep(true);
     
-    if (t.minutes()==0 && t.seconds()==0) {
+    
+    if (t.minutes()==0 && t.seconds()==0) { // out of time
       sleep=true;
+      break;
+    }
+    
+    if (playing!=track_counter) { // track must be changed, stop playing this one
+      track_counter--; // in the beginning of the next loop, we will increment this by one so this makes sure we will play the track user really wants
       break;
     }
 
@@ -197,56 +198,11 @@ void loop() {
   }
   myFile.close();
   Serial.println("End of file. Thank you for listening!");
-  track_counter+=1;
+  
   
   while (sleep) {
     // ...do nothing
   }
   
-  if (track_counter>tracks) {
-    track_counter=1;
-  }
+  
 }
-
-
-/*
-void loop()
-{
-  int count=0;
-
-  // open wave file from sdcard
-  File myFile = SD.open("dl.wav");
-  if (!myFile) {
-    // if the file didn't open, print an error and stop
-    Serial.println("error opening test.wav");
-    while (true);
-  }
-
-  const int S=1024; // Number of samples to read in block
-  short buffer[S];
-
-  Serial.print("Playing");
-  // until the file is not finished
-  while (myFile.available()) {
-    // read from the file into buffer
-    myFile.read(buffer, sizeof(buffer));
-
-    // Prepare samples
-    int volume = 1023;
-    Audio.prepare(buffer, S, volume);
-    // Feed samples to audio
-    Audio.write(buffer, S);
-
-    // Every 100 block print a '.'
-    count++;
-    if (count == 100) {
-      Serial.print(".");
-      count = 0;
-    }
-  }
-  myFile.close();
-
-  Serial.println("End of file. Thank you for listening!");
-  while (true) ;
-}
-*/
