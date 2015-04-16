@@ -4,12 +4,13 @@
 
 
 #include "display.h"
-#include "timer.h"
+#include "mytimer.h"
 #include "step_motor.h"
 
 #include <SD.h>
 #include <SPI.h>
 #include <Audio.h>
+#include <DueTimer.h>
 
 #define knobA 6 // pins for timer/track knob
 #define knobB 7
@@ -18,8 +19,8 @@
 int numbers[]={31,32,33,34}; // four different digits in display
 int order[]={22,23,24,25,26,27,28,29}; // pins to form numbers A-G,DP
 Display d(numbers,order);
-Timer t(0,0);
-StepMotor motor(513,36,37,38,39,-1); // stepper motor, pins 36-39, no indicator LED
+MyTimer t(0,0);
+// StepMotor motor(513,36,37,38,39,-1); // stepper motor, pins 36-39, no indicator LED
 
 void setup() {
   
@@ -36,6 +37,10 @@ void setup() {
   
   attachInterrupt(knobA, isr, CHANGE);
   attachInterrupt(knobB, isr, CHANGE);
+  
+  // timer for updating display
+  //Timer.getAvailable().attachInterrupt(timer_isr).start(10);
+  Timer3.attachInterrupt(timer_isr).start(1000);
   
   //  MUSIC PART
   
@@ -56,6 +61,10 @@ void setup() {
   // 100 mSec of prebuffering.
   Audio.begin(88200, 100);
 
+}
+
+void timer_isr() {
+  d.show_next();  
 }
 
 int track_counter = 0;
@@ -106,7 +115,7 @@ void isr() {
 
 
 boolean sleep=false;
-int tracks=2; // number of tracks we have in the SD card
+// int tracks=2; // number of tracks we have in the SD card
 int playing;
 char* name_b = "track00";
 char* name_e = ".wav";
@@ -115,12 +124,9 @@ char track_name[12];
 void loop() {
 
   track_counter+=1;
-  if (track_counter>tracks) {
-    track_counter=1;
-  }
   playing=track_counter;
   
-  char numstr[1];
+  char numstr[3];
   
   sprintf(numstr, "%d", track_counter-1);
   strcpy(track_name, name_b);
@@ -130,11 +136,19 @@ void loop() {
   // open wave file from sdcard
   Serial.print("Playing ");
   Serial.println(track_name);
-  File myFile = SD.open(track_name);
-  if (!myFile) {
-    // if the file didn't open, print an error and stop
-    Serial.println("error opening .wav");
-    while (true);
+  File myFile;
+  if (SD.exists(track_name)) {
+    myFile = SD.open(track_name);
+    if (!myFile) {
+      // if the file didn't open, we most likely don't have it, go back to beginning
+      Serial.println("error opening .wav");
+      track_counter=0;
+      return;
+    }
+  }
+  else {
+    track_counter=0;
+    return;
   }
 
   const int S=1024; // Number of samples to read in block
@@ -151,7 +165,10 @@ void loop() {
     int volume = 512;
     Audio.prepare(buffer, S, volume);
     // Feed samples to audio
+    
     Audio.write(buffer, S);
+    
+    
     
     // isr increments the counter, here just make sure it's not smaller than zero
     if (track_counter<1) {
@@ -179,10 +196,9 @@ void loop() {
         }
       }
     }
-    d.show_next();
     
     // motor
-    motor.singleStep(true);
+    // motor.singleStep(true);
     
     
     if (t.minutes()==0 && t.seconds()==0) { // out of time

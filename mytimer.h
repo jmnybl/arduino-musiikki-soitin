@@ -1,14 +1,14 @@
-#ifndef _timer_h_
-#define _timer_h_
+#ifndef _mytimer_h_
+#define _mytimer_h_
 
 #include <Arduino.h>
 
-class Timer {
+class MyTimer {
   public:
     int secs;
     long last_update;
     
-    Timer(int minutes, int seconds);
+    MyTimer(int minutes, int seconds);
     void set_time(int minutes, int seconds);
     void increment(int minutes, int seconds);
     void update();
