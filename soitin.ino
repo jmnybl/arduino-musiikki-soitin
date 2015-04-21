@@ -1,5 +1,6 @@
 /*
  Audio part from http://arduino.cc/en/Tutorial/SimpleAudioPlayer
+ DueTimer: https://github.com/ivanseidel/DueTimer
 */
 
 
@@ -20,13 +21,13 @@ int numbers[]={31,32,33,34}; // four different digits in display
 int order[]={22,23,24,25,26,27,28,29}; // pins to form numbers A-G,DP
 Display d(numbers,order);
 MyTimer t(0,0);
-// StepMotor motor(513,36,37,38,39,-1); // stepper motor, pins 36-39, no indicator LED
+StepMotor motor(513,41,39,37,35,-1); // stepper motor, pins 36-39, no indicator LED
 
 void setup() {
   
   // DISPLAY AND BUTTON
   
-  t.set_time(4,10); // 4 min, 10 secs
+  t.set_time(15,10); // 15 min, 10 secs
   d.clear_display();
   
   pinMode(knobA, INPUT_PULLUP); // pull-up resistors
@@ -45,15 +46,15 @@ void setup() {
   //  MUSIC PART
   
   // debug output at 9600 baud
-  Serial.begin(9600);
+  // Serial.begin(9600);
 
   // setup SD-card
-  Serial.print("Initializing SD card...");
+  // Serial.print("Initializing SD card...");
   if (!SD.begin(4)) {
-    Serial.println(" failed!");
+    // Serial.println(" failed!");
     return;
   }
-  Serial.println(" done.");
+  // Serial.println(" done.");
   // hi-speed SPI transfers
   SPI.setClockDivider(4);
 
@@ -115,33 +116,32 @@ void isr() {
 
 
 boolean sleep=false;
-// int tracks=2; // number of tracks we have in the SD card
 int playing;
-char* name_b = "track00";
+char* name_b = "track";
 char* name_e = ".wav";
-char track_name[12];
 
 void loop() {
 
   track_counter+=1;
   playing=track_counter;
   
-  char numstr[3];
+  char numstr[32];
+  char track_name[64];
   
-  sprintf(numstr, "%d", track_counter-1);
+  sprintf(numstr, "%d", track_counter);
   strcpy(track_name, name_b);
   strcat(track_name, numstr);
   strcat(track_name, name_e);
   
   // open wave file from sdcard
-  Serial.print("Playing ");
-  Serial.println(track_name);
+  // Serial.print("Playing ");
+  // Serial.println(track_name);
   File myFile;
   if (SD.exists(track_name)) {
     myFile = SD.open(track_name);
     if (!myFile) {
       // if the file didn't open, we most likely don't have it, go back to beginning
-      Serial.println("error opening .wav");
+      // Serial.println("error opening .wav");
       track_counter=0;
       return;
     }
@@ -154,7 +154,7 @@ void loop() {
   const int S=1024; // Number of samples to read in block
   short buffer[S];
 
-  Serial.print("Playing");
+  // Serial.print("Playing");
   // until the file is not finished
   while (myFile.available()) {
     // read from the file into buffer
@@ -198,13 +198,15 @@ void loop() {
     }
     
     // motor
-    // motor.singleStep(true);
+    motor.singleStep(true);
     
     
     if (t.minutes()==0 && t.seconds()==0) { // out of time
       sleep=true;
       break;
     }
+    
+    
     
     if (playing!=track_counter) { // track must be changed, stop playing this one
       track_counter--; // in the beginning of the next loop, we will increment this by one so this makes sure we will play the track user really wants
@@ -214,7 +216,7 @@ void loop() {
     
   }
   myFile.close();
-  Serial.println("End of file. Thank you for listening!");
+  // Serial.println("End of file. Thank you for listening!");
   
   
   while (sleep) {
